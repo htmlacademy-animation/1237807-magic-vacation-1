@@ -60838,9 +60838,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "RESULT_ANIMATIONS", function() { return RESULT_ANIMATIONS; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "TIMER_DURATION_MIN", function() { return TIMER_DURATION_MIN; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "PLANES", function() { return PLANES; });
-/* harmony import */ var three__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! three */ "./node_modules/three/build/three.module.js");
-
-
 const ACCENT_TYPOGRAPHY_ANIMATIONS = [
   {
     name: `introTitle1`,
@@ -61302,28 +61299,28 @@ const PLANES = [
       blobs: [
         {
           radius: 90,
-          position: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](
-              0.22 * window.innerWidth,
-              0.4 * window.innerHeight
-          ).multiplyScalar(window.devicePixelRatio),
+          position: {
+            x: 0.22,
+            y: 0.4,
+          },
           glowOffset: 20,
           glowClippingPosition: 20,
         },
         {
           radius: 125,
-          position: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](
-              0.37 * window.innerWidth,
-              0.85 * window.innerHeight
-          ).multiplyScalar(window.devicePixelRatio),
+          position: {
+            x: 0.37,
+            y: 0.85,
+          },
           glowOffset: 20,
           glowClippingPosition: 30,
         },
         {
           radius: 50,
-          position: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](
-              0.48 * window.innerWidth,
-              0.17 * window.innerHeight
-          ).multiplyScalar(window.devicePixelRatio),
+          position: {
+            x: 0.48,
+            y: 0.17,
+          },
           glowOffset: 15,
           glowClippingPosition: 1,
         },
@@ -61750,13 +61747,39 @@ class PlaneView extends _scene_3d_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
     this.setupPlaneObjects();
   }
 
+  getBlobsUniforms(params) {
+    return params.reduce((acc, item) => {
+      const blobParams = {
+        radius: item.radius,
+        position: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](
+            item.position.x * window.innerWidth,
+            item.position.y * window.innerHeight
+        ).multiplyScalar(window.devicePixelRatio),
+        glowOffset: item.glowOffset,
+        glowClippingPosition: item.glowClippingPosition,
+      };
+      acc.push(blobParams);
+      return acc;
+    }, []);
+  }
+
+  updateBlobs(material, params) {
+    material.uniforms.blobs.value = this.getBlobsUniforms(params);
+    material.needsUpdate = true;
+  }
+
   createCustomMaterial(texture, effects) {
     const material = new _materials_custom_material_js__WEBPACK_IMPORTED_MODULE_2__["default"](texture);
     if (effects.hueShift) {
       material.uniforms.hueShift.value = effects.hueShift;
     }
     if (effects.blobs) {
-      material.uniforms.blobs.value = effects.blobs;
+      let update = () => {
+        this.updateBlobs(material, effects.blobs);
+        requestAnimationFrame(update);
+      };
+
+      requestAnimationFrame(update);
     }
     return material;
   }
@@ -61814,7 +61837,6 @@ class Scene3D {
     this.width = window.innerWidth;
     this.height = window.innerHeight;
     this.canvas = document.getElementById(options.canvas);
-    this.resizeInProgress = false;
     this.color = options.color;
     this.alpha = options.alpha;
     this.far = options.far;
@@ -61831,7 +61853,6 @@ class Scene3D {
   initEventListeners() {
     window.addEventListener(`resize`, this.updateSize.bind(this));
   }
-
 
   setup() {
     // 1.1.1. Renderer
@@ -61875,6 +61896,7 @@ class Scene3D {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.render();
   }
 }
 
@@ -64074,6 +64096,7 @@ __webpack_require__.r(__webpack_exports__);
         observeParents: true,
       });
     }
+    plane3DView.setPlane(_common_enums__WEBPACK_IMPORTED_MODULE_1__["Slider3DPlanes"][storySlider.activeIndex]);
   };
 
   window.addEventListener(`resize`, function () {
