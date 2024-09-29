@@ -34,7 +34,7 @@
 
 @keyframes slide-in-up {
   0% {
-    transform: translateY(1.5em);
+    transform: translateY(100%);
   }
 
   100% {
@@ -219,9 +219,6 @@
     transform: rotate(0) translateY(0) translateX(0);
   }
 }
-
-  // радиус - 2 рема или 20пкс
-  // длина окружности - 2 ПИ * радиус, то есть 12.56 ремов пройдёт за полный оборот
 
 @keyframes button-roll-left {
   0% {

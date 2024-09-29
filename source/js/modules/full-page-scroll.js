@@ -1,5 +1,7 @@
 import throttle from "lodash/throttle";
 import PageSwitchHandler from "./page-switch-handler.js";
+import ResultsSwitchHandler from "./results-switch-handler.js";
+import Chat from "./chat.js";
 import TimerAnimation from "./2d/animations/timer-animation.js";
 import PrizesAnimation from "./2d/animations/prizes-animation.js";
 import SonyaAnimation from "./2d/animations/sonya-animation.js";
@@ -16,7 +18,9 @@ export default class FullPageScroll {
     this.pageAnimationSwitcher = new PageSwitchHandler();
     this.prizesAnimation = new PrizesAnimation(PRIZES_ANIMATIONS);
     this.sonyaAnimation = new SonyaAnimation(SonyaAnimations);
-    this.gameTimer = new TimerAnimation();
+    this.gameResultsSwitcher = new ResultsSwitchHandler();
+    this.chat = new Chat(this.gameResultsSwitcher);
+    this.gameTimer = new TimerAnimation(this.gameResultsSwitcher);
     this.scene3D = scene3D;
 
     this.screenElements = document.querySelectorAll(
@@ -78,37 +82,28 @@ export default class FullPageScroll {
     }
     changeScreen();
   }
-  // меняет отображаемую страницу, рисует нужные 3D сцены и запускает необходимые анимации
+
   changePageDisplay() {
-    // после полной загрузки объектов сцены
+    this.gameResultsSwitcher.hideResults();
+
     const onSceneLoaded = () => {
-      // делаем текущий экран видимым
       this.changeVisibilityDisplay();
-      // меняем активный пункт меню
       this.changeActiveMenuItem();
-      // запускаем css анимации в зависимости от id экрана
       this.pageAnimationSwitcher.runAnimationScheme(activeScreenId);
-      // передаём на body событие смены экрана
       this.emitChangeDisplayEvent();
-      // завершаем прелоадер
       this.scene3D.finishPreloader();
-      // добавляем класс loaded на body и запускаем CSS анимации для него
       document.body.classList.add(`loaded`);
     };
-    // определяем id активного экрана
+
     const activeScreenId = this.screenElements[this.activeScreen].id;
 
-    // ГЛАВНЫЙ ЭКРАН
+    // main page
     if (this.activeScreen === Screens.TOP) {
-      // берём id конкретной сцены, соответствующей данному экрану
       const activeSceneId = Scenes[this.activeScreen];
-      // отрисовываем конкретную сцену, соответствующую данному экрану
       this.scene3D.initScenes(activeScreenId, activeSceneId, onSceneLoaded);
-
     }
-    // ЭКРАН ИСТОРИЯ
+    // story
     if (this.activeScreen === Screens.STORY) {
-      // берём id конкретной сцены, соответствующей текущему слайду в свайпере
       const slider = this.screenElements[this.activeScreen].children[0].dom7ElementDataStorage.swiper;
       const scene3D = this.scene3D;
       const activeSlide = slider.realIndex;
@@ -124,18 +119,18 @@ export default class FullPageScroll {
     } else {
       setColorTheme(ColorThemes, 6);
     }
-    // ЭКРАН ПРИЗЫ
+    // prizes
     if (this.activeScreen === Screens.PRIZES) {
       onSceneLoaded();
       this.prizesAnimation.init();
     } else {
       this.prizesAnimation.destroy();
     }
-    // ЭКРАН ПРАВИЛА
+    // rules
     if (this.activeScreen === Screens.RULES) {
       onSceneLoaded();
     }
-    // ЭКРАН ИГРА
+    // game
     if (this.activeScreen === Screens.GAME) {
       onSceneLoaded();
       this.gameTimer.init();
@@ -146,7 +141,6 @@ export default class FullPageScroll {
     }
   }
 
-  // меняет видимость экранов (добавляет и убирает соответствующие классы active и screen--hidden)
   changeVisibilityDisplay() {
     this.screenElements.forEach((screen) => {
       screen.classList.add(`screen--hidden`);
@@ -158,7 +152,6 @@ export default class FullPageScroll {
     }, 100);
   }
 
-  // меняет активный пункт меню
   changeActiveMenuItem() {
     const activeItem = Array.from(this.menuElements).find(
         (item) => item.dataset.href === this.screenElements[this.activeScreen].id
@@ -168,7 +161,7 @@ export default class FullPageScroll {
       activeItem.classList.add(`active`);
     }
   }
-  // передаёт кастомное событие на body (пока не используется)
+
   emitChangeDisplayEvent() {
     const event = new CustomEvent(`screenChanged`, {
       detail: {
